@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# YouTube UI
 
-## Getting Started
+A YouTube home/watch/search interface built with Next.js 16 (App Router), React 19 and
+Tailwind CSS v4, wired to the **YouTube Data API v3**.
 
-First, run the development server:
+![Home](./docs/home.png)
+
+## Setup
 
 ```bash
+npm install
+cp .env.example .env.local   # then paste your key
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.local`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+YOUTUBE_API_KEY=your_key_here
+YOUTUBE_REGION=US            # optional, drives the "most popular" chart
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Without a key the app renders a bundled demo feed instead of failing, so you can work on
+the UI offline. A small banner at the bottom of the page tells you which one you're seeing.
 
-## Learn More
+## Routes
 
-To learn more about Next.js, take a look at the following resources:
+| Route | What it does |
+| --- | --- |
+| `/` | Home: category chips, featured hero, Recommended rail, Shorts rail |
+| `/?c=Music` | Same feed filtered by chip (`Music`, `Gaming`, `Live`, `Tech`, …) |
+| `/results?q=…` | Search results (`search.list`) |
+| `/watch?v=…` | Player (privacy-enhanced embed), metadata, "Up next" column |
+| `/shorts`, `/feed/*`, `/playlist/*` | Sidebar destinations, rendered as video grids |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How the API is used
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`src/lib/youtube.ts` is the only place that talks to Google. Every call goes through one
+`api()` helper with `next: { revalidate: 600 }`, so a page hit doesn't cost quota more
+than once per 10 minutes.
 
-## Deploy on Vercel
+- **Home** — `videos.list?chart=mostPopular` (with `videoCategoryId` for Music/Gaming/News/Movies).
+- **Live / Mixes / Tech / Recently uploaded** — `search.list`, then `videos.list` to
+  hydrate duration and view counts, which `search.list` does not return.
+- **Channel avatars** — `channels.list`, batched to one request for up to 50 ids.
+- **Verified badge** — the API exposes no verification flag, so a channel with 100k+
+  subscribers gets the badge.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Quota note: `search.list` costs 100 units against a 10,000/day default, `videos.list`
+costs 1. The chip filters that use search are the expensive ones.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project layout
+
+```
+src/
+  app/          routes (server components; data fetched on the server)
+  components/   AppShell, Sidebar, TopBar, HeroCard, VideoCard, Carousel, Shelf …
+  lib/
+    youtube.ts  YouTube Data API client + mappers
+    demo.ts     offline fallback feed
+    format.ts   view counts, relative dates, ISO-8601 durations
+    types.ts
+```
+
+The API key is only ever read in server components, so it never reaches the browser.
