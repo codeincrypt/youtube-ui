@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { SVGProps } from "react";
 
 type Props = SVGProps<SVGSVGElement>;
@@ -14,26 +15,17 @@ const base = (props: Props) => ({
   ...props,
 });
 
+/** The 2017 wordmark, recolored white for the dark UI; the play button keeps brand red. */
 export function YouTubeLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 100 20" className={className} aria-hidden>
-      <path
-        d="M27.9 3.1a3.6 3.6 0 0 0-2.5-2.5C23.2 0 14.2 0 14.2 0S5.2 0 3 .6A3.6 3.6 0 0 0 .5 3.1C0 5.3 0 10 0 10s0 4.7.5 6.9a3.6 3.6 0 0 0 2.5 2.5c2.2.6 11.2.6 11.2.6s9 0 11.2-.6a3.6 3.6 0 0 0 2.5-2.5c.5-2.2.5-6.9.5-6.9s0-4.7-.5-6.9Z"
-        fill="#FF0033"
-      />
-      <path d="M11.4 14.3 18.9 10l-7.5-4.3v8.6Z" fill="#fff" />
-      <text
-        x="33"
-        y="15.6"
-        fill="currentColor"
-        fontSize="16.5"
-        fontWeight="700"
-        letterSpacing="-0.9"
-        fontFamily="Roboto, system-ui, sans-serif"
-      >
-        YouTube
-      </text>
-    </svg>
+    <Image
+      src="/youtube-logo.png"
+      alt="YouTube"
+      width={640}
+      height={143}
+      priority
+      className={className}
+    />
   );
 }
 

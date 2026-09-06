@@ -60,14 +60,37 @@ const SEARCH_CHIPS: Partial<Record<Chip, Record<string, string>>> = {
 };
 
 export function hasApiKey(): boolean {
-  return Boolean(process.env.YOUTUBE_API_KEY);
+  return Boolean(process.env.NEXT_PUBLIC_YOUTUBE_API_KEY);
 }
 
-type ApiList<T> = { items?: T[]; nextPageToken?: string; error?: { message?: string } };
+type ApiError = {
+  message?: string;
+  details?: { reason?: string }[];
+};
+type ApiList<T> = { items?: T[]; nextPageToken?: string; error?: ApiError };
+
+/**
+ * These calls run on the server, so the request carries no Referer and no
+ * browser origin. A key locked to "Websites (HTTP referrers)" can therefore
+ * never satisfy the restriction — Google's own message ("Requests from referer
+ * <empty> are blocked") does not say that, so spell out the fix.
+ */
+function explain(error: ApiError | undefined, status: number): string {
+  const reason = error?.details?.find((d) => d.reason)?.reason;
+  const message = error?.message ?? `YouTube API responded ${status}`;
+
+  if (reason === "API_KEY_HTTP_REFERRER_BLOCKED" || /referer/i.test(message)) {
+    return "This YouTube API key is restricted to website referrers, but these requests come from the server. In Google Cloud Console → Credentials → your key → Application restrictions, choose None (or IP addresses).";
+  }
+  if (reason === "API_KEY_IP_ADDRESS_BLOCKED") {
+    return "This YouTube API key is restricted to specific IP addresses that do not include this server. Update Application restrictions in Google Cloud Console.";
+  }
+  return message;
+}
 
 async function api<T>(path: string, params: Record<string, string>): Promise<ApiList<T>> {
-  const key = process.env.YOUTUBE_API_KEY;
-  if (!key) throw new Error("YOUTUBE_API_KEY is not set");
+  const key = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+  if (!key) throw new Error("NEXT_PUBLIC_YOUTUBE_API_KEY is not set");
 
   const url = new URL(`${BASE}/${path}`);
   for (const [name, value] of Object.entries(params)) url.searchParams.set(name, value);
@@ -76,7 +99,7 @@ async function api<T>(path: string, params: Record<string, string>): Promise<Api
   const res = await fetch(url, { next: { revalidate: REVALIDATE } });
   const body = (await res.json()) as ApiList<T>;
   if (!res.ok) {
-    throw new Error(body?.error?.message ?? `YouTube API responded ${res.status}`);
+    throw new Error(explain(body?.error, res.status));
   }
   return body;
 }
@@ -298,7 +321,7 @@ export async function searchVideos(query: string): Promise<{ videos: Video[]; er
           v.title.toLowerCase().includes(needle) ||
           v.channel.title.toLowerCase().includes(needle),
       ),
-      error: "Showing demo results — set YOUTUBE_API_KEY to search YouTube.",
+      error: "Showing demo results — set NEXT_PUBLIC_YOUTUBE_API_KEY to search YouTube.",
     };
   }
 

@@ -96,7 +96,7 @@ export default function Sidebar({
       >
         <div className="mb-4 flex items-center justify-between px-2">
           <Link href="/" className="block" aria-label="YouTube home">
-            <YouTubeLogo className="h-[26px] w-auto text-white" />
+            <YouTubeLogo className="h-[26px] w-auto" />
           </Link>
           <button
             type="button"

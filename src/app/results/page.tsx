@@ -25,7 +25,9 @@ export default async function Results({
       )}
 
       {videos.length === 0 ? (
-        <p className="mt-8 text-[15px] text-ink-dim">No videos matched that search.</p>
+        <p className="mt-8 text-[15px] text-ink-dim">
+          {error ? "Search is unavailable right now." : "No videos matched that search."}
+        </p>
       ) : (
         <ul className="mt-6 space-y-5">
           {videos.map((video) => (

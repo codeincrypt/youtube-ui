@@ -16,8 +16,8 @@ npm run dev
 `.env.local`:
 
 ```
-YOUTUBE_API_KEY=your_key_here
-YOUTUBE_REGION=US            # optional, drives the "most popular" chart
+NEXT_PUBLIC_YOUTUBE_API_KEY=your_key_here
+NEXT_PUBLIC_YOUTUBE_REGION=US            # optional, drives the "most popular" chart
 ```
 
 Without a key the app renders a bundled demo feed instead of failing, so you can work on
